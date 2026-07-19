@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  cloud-api:
+    build: ./cloud/microservices/maintenance-predictor
+    ports: ["8080:8080"]
+    environment:
+      - REDIS_ADDR=redis:6379
+      - DATABASE_URL=root:root@tcp(mysql:3306)/nexusguard?charset=utf8mb4&parseTime=True&loc=Local
+    depends_on: [redis, mysql]
+
+  edge-agent-1:
+    build: ./edge/edge-agent
+    environment:
+      - DEVICE_ID=edge-001
+      - CLOUD_URL=http://cloud-api:8080
+    depends_on: [cloud-api]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  jarvis:
+    build: ./cloud/microservices/jarvis-core
+    ports: ["8081:8081"]
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - CLOUD_API_URL=http://cloud-api:8080
+    depends_on: [cloud-api]
+
+  jarvis-voice:
+    build: ./cloud/microservices/jarvis-voice
+    ports: ["8082:8082"]
+    environment:
+      - JARVIS_URL=http://jarvis:8081
+    depends_on: [jarvis]
+
+  analytics:
+    build: ./cloud/microservices/analytics
+    ports: ["8095:8095"]
+    depends_on: [redis]
+
+  frontend:
+    build: ./frontend
+    ports: ["3000:3000"]
+    environment:
+      - NEXT_PUBLIC_API_URL=http://cloud-api:8080
+      - NEXT_PUBLIC_JARVIS_URL=http://jarvis:8081
+      - NEXT_PUBLIC_WS_URL=http://cloud-api:8080
+    depends_on: [cloud-api, jarvis, analytics]
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: nexusguard
+    ports: ["3306:3306"]
+    volumes: [mysqldata:/var/lib/mysql]
+
+volumes:
+  mysqldata:

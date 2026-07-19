@@ -1,0 +1,6 @@
+# Code owners for NexusGuard AI
+* @nexusguard-core-team
+/cloud/ @go-team
+/edge/ @cpp-team
+/infrastructure/ @devops-team
+/tests/ @qa-team

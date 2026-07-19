@@ -1,0 +1,142 @@
+name: NexusGuard CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # 1. Build & Test Edge Firmware (C++)
+  build-edge-firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build C++ Firmware Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./edge/firmware
+          push: false
+          tags: ${{ env.IMAGE_NAME }}/edge-firmware:build-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Unit Tests (Google Test)
+        run: |
+          cd edge/firmware
+          mkdir -p build && cd build
+          cmake .. && make -j$(nproc)
+          ctest --output-on-failure
+
+  # 2. Build & Test Edge Agent (Python)
+  build-edge-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          cd edge/edge-agent
+          pip install -r requirements.txt
+
+      - name: Run Unit Tests (Pytest)
+        run: |
+          cd edge/edge-agent
+          pytest tests/ --cov=src --cov-report=xml
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./edge/edge-agent/coverage.xml
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./edge/edge-agent
+          push: false
+          tags: ${{ env.IMAGE_NAME }}/edge-agent:build-${{ github.sha }}
+
+  # 3. Build & Test Cloud Backend (Go)
+  build-cloud-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install Dependencies
+        run: |
+          cd cloud/microservices/maintenance-predictor
+          go mod download
+
+      - name: Run Unit Tests
+        run: |
+          cd cloud/microservices/maintenance-predictor
+          go test -v -coverprofile=coverage.out ./...
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./cloud/microservices/maintenance-predictor
+          push: false
+          tags: ${{ env.IMAGE_NAME }}/cloud-api:build-${{ github.sha }}
+
+  # 4. Security Scans (Trivy + Snyk)
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: [build-edge-firmware, build-edge-agent, build-cloud-backend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy Results to GitHub Security Tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: Run Snyk Security Scan
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --all-projects --severity-threshold=high
+
+  # 5. Deploy to Staging (Kubernetes)
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [build-edge-firmware, build-edge-agent, build-cloud-backend, security-scan]
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure K8s Context
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
+
+      - name: Deploy to Staging
+        run: |

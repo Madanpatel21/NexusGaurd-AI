@@ -1,0 +1,30 @@
+stages:
+  - build
+  - test
+  - security
+  - deploy
+
+build:
+  stage: build
+  script:
+    - docker build -t nexusguard:latest .
+    - docker push nexusguard:latest
+
+test:
+  stage: test
+  script:
+    - pytest tests/
+    - go test ./...
+
+security:
+  stage: security
+  script:
+    - trivy fs .
+    - snyk test
+
+deploy:
+  stage: deploy
+  script:
+    - helm upgrade --install nexusguard ./infrastructure/helm/nexusguard-core
+  only:
+    - main

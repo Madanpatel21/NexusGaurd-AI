@@ -1,0 +1,11 @@
+.git
+.gitignore
+*.md
+LICENSE
+.env
+*.log
+.idea
+.vscode
+tests/
+docs/
+infrastructure/

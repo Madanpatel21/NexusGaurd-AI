@@ -1,0 +1,65 @@
+# .docker-compose.yml
+version: '3.8'
+
+services:
+  # Cloud Backend
+  cloud-api:
+    build:
+      context: ./cloud/microservices/maintenance-predictor
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_ADDR=redis:6379
+      - DATABASE_URL=root:root@tcp(mysql:3306)/nexusguard?charset=utf8mb4&parseTime=True&loc=Local
+    depends_on:
+      - redis
+      - mysql
+
+  # Edge Agent (Simulating 3 devices)
+  edge-agent-1:
+    build:
+      context: ./edge/edge-agent
+      dockerfile: Dockerfile
+    environment:
+      - DEVICE_ID=edge-001
+      - CLOUD_URL=http://cloud-api:8080
+    depends_on:
+      - cloud-api
+
+  edge-agent-2:
+    build:
+      context: ./edge/edge-agent
+      dockerfile: Dockerfile
+    environment:
+      - DEVICE_ID=edge-002
+      - CLOUD_URL=http://cloud-api:8080
+    depends_on:
+      - cloud-api
+
+  # Data Layer
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: nexusguard
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysqldata:/var/lib/mysql
+
+  # Orchestrator
+  federated-server:
+    build:
+      context: ./cloud/microservices/federated-learning
+      dockerfile: Dockerfile
+    depends_on:
+      - cloud-api
+
+volumes:
+  mysqldata:

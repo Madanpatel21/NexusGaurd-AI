@@ -1,0 +1,30 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: edge-cloud-disconnect
+spec:
+  action: disconnect
+  mode: one
+  selector:
+    namespaces: [nexusguard]
+    labelSelectors:
+      app: edge-agent
+  target:
+    selector:
+      namespaces: [nexusguard]
+      labelSelectors:
+        app: maintenance-predictor
+  duration: "30s"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: cloud-api-failure
+spec:
+  action: pod-failure
+  mode: one
+  selector:
+    namespaces: [nexusguard]
+    labelSelectors:
+      app: maintenance-predictor
+  duration: "15s"

@@ -1,0 +1,35 @@
+# infrastructure/monitoring/elk-stack.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch
+  namespace: monitoring
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+          env:
+            - name: discovery.type
+              value: "single-node"
+            - name: "ES_JAVA_OPTS"
+              value: "-Xms2g -Xmx2g"
+---
+# Filebeat sidecar for log collection
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: filebeat
+  namespace: monitoring
+spec:
+  template:
+    spec:
+      containers:
+        - name: filebeat
+          image: docker.elastic.co/beats/filebeat:8.11.0
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log
+          args: ["-e", "-c", "/etc/filebeat.yml"]

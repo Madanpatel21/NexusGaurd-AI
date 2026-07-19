@@ -1,0 +1,22 @@
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: nexusguard
+spec:
+  mtls:
+    mode: STRICT # Enforce mTLS everywhere
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: require-jwt
+  namespace: nexusguard
+spec:
+  selector:
+    matchLabels:
+      app: maintenance-predictor
+  rules:
+    - from:
+        - source:
+            requestPrincipals: ["*"] # Require valid JWT from Edge

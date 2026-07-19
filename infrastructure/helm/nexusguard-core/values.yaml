@@ -1,0 +1,33 @@
+global:
+  imageRegistry: ghcr.io
+cloudApi:
+  replicaCount: 3
+  image:
+    repository: nexusguard/api
+    tag: latest
+jarvis:
+  enabled: false
+  replicaCount: 2
+  image:
+    repository: nexusguard/jarvis-core
+    tag: latest
+  llm:
+    hf_token: ""
+voice:
+  enabled: false
+  replicaCount: 1
+  image:
+    repository: nexusguard/jarvis-voice
+    tag: latest
+analytics:
+  enabled: false
+  replicaCount: 1
+  image:
+    repository: nexusguard/analytics
+    tag: latest
+frontend:
+  enabled: false
+  replicaCount: 1
+  image:
+    repository: nexusguard/command-center
+    tag: latest

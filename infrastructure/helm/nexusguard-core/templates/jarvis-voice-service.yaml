@@ -1,0 +1,14 @@
+{{- if .Values.voice.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexusguard-jarvis-voice
+spec:
+  selector:
+    app: jarvis-voice
+  ports:
+    - protocol: TCP
+      port: 8082
+      targetPort: 8082
+  type: ClusterIP
+{{- end }}

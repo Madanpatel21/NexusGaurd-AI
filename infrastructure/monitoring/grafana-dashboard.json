@@ -1,0 +1,23 @@
+{
+  "dashboard": {
+    "title": "NexusGuard AI - Industrial 5.0 Overview",
+    "panels": [
+      {
+        "title": "Telemetry Ingestion Rate",
+        "targets": [{"expr": "rate(nexusguard_telemetry_ingested_total[5m])"}]
+      },
+      {
+        "title": "Anomaly Heatmap",
+        "targets": [{"expr": "rate(edge_anomaly_detected_total[5m])"}]
+      },
+      {
+        "title": "Federated Model Accuracy",
+        "targets": [{"expr": "federated_model_accuracy"}]
+      },
+      {
+        "title": "Edge Latency (P99)",
+        "targets": [{"expr": "histogram_quantile(0.99, rate(edge_latency_seconds_bucket[5m]))"}]
+      }
+    ]
+  }
+}

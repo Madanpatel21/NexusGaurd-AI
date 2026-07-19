@@ -1,0 +1,14 @@
+{{- if .Values.jarvis.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexusguard-jarvis
+spec:
+  selector:
+    app: jarvis
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+  type: ClusterIP
+{{- end }}

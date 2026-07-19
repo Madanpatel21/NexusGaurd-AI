@@ -1,0 +1,36 @@
+{{- if .Values.voice.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexusguard-jarvis-voice
+  labels:
+    app: jarvis-voice
+spec:
+  replicas: {{ .Values.voice.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: jarvis-voice
+  template:
+    metadata:
+      labels:
+        app: jarvis-voice
+    spec:
+      containers:
+        - name: voice
+          image: ghcr.io/nexusguard/jarvis-voice:latest
+          ports:
+            - containerPort: 8082
+          env:
+            - name: JARVIS_URL
+              value: "http://{{ include "nexusguard.fullname" . }}-jarvis:8081"
+          resources:
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+{{- end }}

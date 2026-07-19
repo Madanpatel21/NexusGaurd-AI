@@ -1,0 +1,39 @@
+{{- if .Values.jarvis.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexusguard-jarvis
+  labels:
+    app: jarvis
+spec:
+  replicas: {{ .Values.jarvis.replicaCount | default 2 }}
+  selector:
+    matchLabels:
+      app: jarvis
+  template:
+    metadata:
+      labels:
+        app: jarvis
+    spec:
+      containers:
+        - name: jarvis
+          image: ghcr.io/nexusguard/jarvis-core:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: nexusguard-secrets
+                  key: hf-token
+          resources:
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 10
+{{- end }}

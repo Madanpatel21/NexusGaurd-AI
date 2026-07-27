@@ -798,7 +798,7 @@ Use Cases Supported:    4+
 
 ### ⭐ If you find this helpful, please star the repository!
 
-**[View on GitHub](https://github.com/Madanpatel21/NexusGaurd-AI)** • **[Visit Website](https://nexusguard.ai)** • **[Get Support](mailto:enterprise@nexusguard.ai)**
+**[View on GitHub](https://github.com/Madanpatel21/NexusGaurd-AI)** • **[Visit Website](https://nexusguard.ai)** • **[Get Support](mailto: patelmadan128@gmail.com)**
 
 ---
 
